@@ -50,8 +50,10 @@ jobs:
         id: semver_check
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
+          echo "MAKE_LATEST=false" >> $GITHUB_ENV
           echo "PRERELEASE=true" >> $GITHUB_ENV
           else
+          echo "MAKE_LATEST=true" >> $GITHUB_ENV
           echo "PRERELEASE=false" >> $GITHUB_ENV
           fi
       - name: Create release
@@ -60,6 +62,7 @@ jobs:
           artifacts: "binaries/*"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ env.PRERELEASE }}
+          makeLatest: ${{ env.MAKE_LATEST }}
           body: |
             ## Official Release Artifacts
             ### Linux
