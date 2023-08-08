@@ -49,18 +49,17 @@ jobs:
       - name: Determine if version is valid semver
         id: semver_check
         run: |
-          if [[ "${{ github.ref_name }}" =~ ^v[0-9]+.[0-9]+.[0-9]$ ]]; then
-          echo "MAKE_LATEST=true" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
+          echo "PRERELEASE=true" >> $GITHUB_ENV
           else
-          echo "MAKE_LATEST=false" >> $GITHUB_ENV
+          echo "PRERELEASE=false" >> $GITHUB_ENV
           fi
       - name: Create release
         uses: ncipollo/release-action@v1.12.0
         with:
           artifacts: "binaries/*"
           token: ${{ secrets.GITHUB_TOKEN }}
-          makeLatest: false
-          prerelease: true
+          prerelease: ${{ env.PRERELEASE }}
           body: |
             ## Official Release Artifactss
             ### Linux
