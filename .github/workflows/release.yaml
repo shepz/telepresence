@@ -61,7 +61,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ env.PRERELEASE }}
           body: |
-            ## Official Release Artifactss
+            ## Official Release Artifacts
             ### Linux
                - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
             For more builds across platforms and architectures, see the `Assets` section below.
