@@ -59,7 +59,7 @@ jobs:
         with:
           artifacts: "binaries/*"
           token: ${{ secrets.GITHUB_TOKEN }}
-          makeLatest: ${{ env.MAKE_LATEST }}
+          makeLatest: false
           body: |
             ## Official Release Artifactss
             ### Linux
