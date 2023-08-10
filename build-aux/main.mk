@@ -255,7 +255,7 @@ prepare-release: generate wix
 	git add packaging/telepresence.wxs
 	git add packaging/bundle.wxs
 
-	if git diff-index --quiet HEAD --; then \
+	if git diff --cached --quiet; then \
 	  echo "No changes to commit."; \
 	else \
 	  git commit --signoff --message='Prepare $(TELEPRESENCE_VERSION)'; \
