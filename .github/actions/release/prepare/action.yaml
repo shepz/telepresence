@@ -86,12 +86,7 @@ runs:
       shell: bash
       run: |
         make prepare-release TELEPRESENCE_VERSION=v${{ env.RELEASE_VERSION}}
-        # Check if there are new commits compared to the upstream branch
-        if ! git diff --quiet HEAD origin/${{ github.ref }}; then
-          git push origin HEAD:${{ github.ref }}
-        else
-          echo "No new commits to push."
-        fi
+        git push origin HEAD:${{ github.ref }}
       env:
         GITHUB_TOKEN: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
 

@@ -255,7 +255,11 @@ prepare-release: generate wix
 	git add packaging/telepresence.wxs
 	git add packaging/bundle.wxs
 
-	git commit --signoff --message='Prepare $(TELEPRESENCE_VERSION)'
+	if git diff-index --quiet HEAD --; then \
+	  echo "No changes to commit."; \
+	else \
+	  git commit --signoff --message='Prepare $(TELEPRESENCE_VERSION)'; \
+	fi
 
 	git tag --annotate --message='$(TELEPRESENCE_VERSION)' $(TELEPRESENCE_VERSION)
 	git tag --annotate --message='$(TELEPRESENCE_VERSION)' rpc/$(TELEPRESENCE_VERSION)
