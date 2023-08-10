@@ -2,83 +2,182 @@ name: Releases
 
 on:
   push:
-    tags:
-      # These aren't regexps. They are "Workflow Filter patterns"
-      - v[0-9]+.[0-9]+.[0-9]
-      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
+    branches:
+      - release/2.*
+  pull_request_review:
+    types: [submitted]
 
 jobs:
-  build-release:
-    strategy:
-      fail-fast: false
-      matrix:
-        runners:
-          - ubuntu-latest
-          - macos-latest
-          - macOS-arm64
-          - windows-2019
-    runs-on: ${{ matrix.runners }}
+#  check-commit:
+#    if: >
+#      (github.event_name == 'push') ||
+#      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved')
+#    runs-on: ubuntu-latest
+#    outputs:
+#      skip: ${{ steps.skip_check.outputs.skip }}
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Check Commit Message
+#        id: skip_check
+#        run: |
+#          commit_message=$(git log --format=%B -n 1 ${{ github.sha }})
+#          if [[ $commit_message =~ ^Prepare\ release\ v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+#            echo "This is a release commit."
+#            echo "is_release=true" >> $GITHUB_OUTPUT
+#          else
+#            echo "This is NOT a release commit."
+#            echo "is_release=false" >> $GITHUB_OUTPUT
+#          fi
+
+  prepare-release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/install-dependencies
-        name: install dependencies
-      - name: set version
+      - name: Get release type
+        id: get_release_type
         shell: bash
-        run: echo "TELEPRESENCE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-      - run: make release-binary
-      - name: Upload binaries
+        run: |
+          echo "is_ga=false" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "pull_request_review" ]] && [[ "${{ github.event.review.state }}" == "approved" ]]; then
+          echo "is_ga=true" >> $GITHUB_ENV
+          fi
+      - name: Prepare release
+        uses: ./.github/actions/release/prepare
+        with:
+          gh_auto_release_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
+          gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
+          is_ga: ${{ env.is_ga }}
+
+  itests_build_image:
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '~1.20.7'
+      - name: Build dev image
+        run: |
+          make save-tel2-image
+      - name: Upload image
         uses: actions/upload-artifact@v3
         with:
-          name: binaries
-          path: build-output/release
-          retention-days: 1
-      - if: runner.os == 'Linux' && runner.arch == 'X64'
-        name: Upload Docker image
-        run: |
-          docker login -u="${{ secrets.DOCKERHUB_USERNAME }}" -p="${{ secrets.DOCKERHUB_PASSWORD }}"
-          make push-tel2-image
-  release:
-    runs-on: ubuntu-latest
-    needs: build-release
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
-      - name: Create release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "binaries/*"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            ## Official Release Artifacts
-            ### Linux
-               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
-            ### OSX Darwin
-               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-amd64)
-               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-arm64)
-            ### Windows
-               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-windows-amd64.zip)
-
-            For more builds across platforms and architectures, see the `Assets` section below.
-            And for more information, visit our [installation docs](https://www.telepresence.io/docs/latest/quick-start/).
-
-            ![Assets](https://static.scarf.sh/a.png?x-pxid=d842651a-2e4d-465a-98e1-4808722c01ab)
-
-  test-release:
-    needs: release
+          name: image
+          path: build-output/tel2-image.tar
+  itests_run:
     strategy:
       fail-fast: false
       matrix:
         runners:
           - ubuntu-latest
           - macos-latest
-          - macOS-arm64
           - windows-2019
+          - macOS-arm64
+        clusters:
+          - distribution: Kubeception
+            version: "1.26"
     runs-on: ${{ matrix.runners }}
+    needs: itests_build_image
     steps:
       - uses: actions/checkout@v3
-      - name: Test release
-        uses: ./.github/actions/test-release
+      - uses: ./.github/actions/install-dependencies
+        name: install dependencies
+      - uses: actions/download-artifact@v3
         with:
-          release_version: ${{ github.ref_name }}
+          name: image
+      - run: make build
+      - uses: ./.github/actions/prepare-cluster
+        with:
+          kubeception-token: ${{ secrets.DEV_TELEPRESENCE_KUBECEPTION_TOKEN }}
+          kubeceptionProfile: small
+          gke-credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          tel-image: tel2-image.tar
+          cluster-distribution: ${{ matrix.clusters.distribution }}
+          cluster-version: ${{ matrix.clusters.version }}
+        id: kluster
+      - uses: ./.github/actions/integration-tests
+        with:
+          kubeconfig: "${{ steps.kluster.outputs.kubeconfig }}"
+      - uses: ./.github/actions/upload-logs
+        env:
+          LOG_SUFFIX: "-${{ runner.os }}-${{ matrix.clusters.distribution }}-${{ matrix.clusters.version }}"
+        if: always()
+
+
+#  build-release:
+#    if: needs.check-commit.outputs.is_release == true
+#    needs: prepare-release
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        runners:
+#          - ubuntu-latest
+#          - macos-latest
+#          - macOS-arm64
+#          - windows-2019
+#    runs-on: ${{ matrix.runners }}
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#      - uses: ./.github/actions/install-dependencies
+#        name: install dependencies
+#      - name: set version
+#        shell: bash
+#        run: echo "TELEPRESENCE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+#      - run: make release-binary
+#      - name: Upload binaries
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: binaries
+#          path: build-output/release
+#          retention-days: 1
+#      - if: runner.os == 'Linux' && runner.arch == 'X64'
+#        name: Upload Docker image
+#        run: |
+#          docker login -u="${{ secrets.DOCKERHUB_USERNAME }}" -p="${{ secrets.DOCKERHUB_PASSWORD }}"
+#          make push-tel2-image
+#  release:
+#    runs-on: ubuntu-latest
+#    needs: build-release
+#    steps:
+#      - name: Download artifacts
+#        uses: actions/download-artifact@v3
+#      - name: Create release
+#        uses: ncipollo/release-action@v1
+#        with:
+#          artifacts: "binaries/*"
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          body: |
+#            ## Official Release Artifacts
+#            ### Linux
+#               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
+#            ### OSX Darwin
+#               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-amd64)
+#               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-arm64)
+#            ### Windows
+#               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-windows-amd64.zip)
+#
+#            For more builds across platforms and architectures, see the `Assets` section below.
+#            And for more information, visit our [installation docs](https://www.telepresence.io/docs/latest/quick-start/).
+#
+#            ![Assets](https://static.scarf.sh/a.png?x-pxid=d842651a-2e4d-465a-98e1-4808722c01ab)
+#
+#  test-release:
+#    needs: release
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        runners:
+#          - ubuntu-latest
+#          - macos-latest
+#          - macOS-arm64
+#          - windows-2019
+#    runs-on: ${{ matrix.runners }}
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Test release
+#        uses: ./.github/actions/test-release
+#        with:
+#          release_version: ${{ github.ref_name }}

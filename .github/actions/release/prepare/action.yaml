@@ -1,0 +1,93 @@
+name: Prepare release
+description: "Prepare release"
+inputs:
+  gh_auto_release_token:
+    description: "The token to use to authenticate with GitHub"
+    required: true
+  gh_auto_release_email:
+    description: "The email to use to authenticate with GitHub"
+    required: true
+  gh_auto_release_user:
+    description: "The user to use to authenticate with GitHub"
+    required: true
+  is_ga:
+    description: "Is ga"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set outputs
+      id: get_event
+      shell: bash
+      run: |
+        echo "RELEASE_MESSAGE=PWET" >> $GITHUB_ENV
+        if [[ "${{ inputs.is_ga }}" == true ]]; then
+          echo "RELEASE_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")" >> $GITHUB_ENV
+        else
+          CURRENT_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
+          echo "CURRENT_VERSION"
+          echo $CURRENT_VERSION
+          git fetch --tags
+          TAGS=$(git tag | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$" | sort -V)
+          echo "TAGS"
+          echo $TAGS
+
+          ESCAPED_CURRENT_VERSION=$(echo $CURRENT_VERSION | sed 's/\./\\./g')
+
+          echo "ESCAPED_CURRENT_VERSION"
+          echo $ESCAPED_CURRENT_VERSION
+
+          LAST_TAG=$(echo "$TAGS" | grep -E "^v$ESCAPED_CURRENT_VERSION(-rc\.[0-9]+)?$") || true
+
+          echo "LAST_TAG"
+          echo $LAST_TAG
+
+          if [[ "$LAST_TAG" =~ -rc\.([0-9]+)$ ]]; then
+            RC_NUM=${BASH_REMATCH[1]}
+            NEXT_RC_NUM=$((RC_NUM+1))
+            NEXT_TAG="$CURRENT_VERSION-rc.$NEXT_RC_NUM"
+          else
+            NEXT_TAG="$CURRENT_VERSION-rc.0"
+          fi
+          echo "NEXT_TAG"
+          echo $NEXT_TAG
+
+          echo "RELEASE_VERSION=$(echo $NEXT_TAG)" >> $GITHUB_ENV
+
+        fi
+
+    - name: Setup Git Config
+      shell: bash
+      run: |
+        set -x
+
+        git config --global user.email '${{ inputs.GH_AUTO_RELEASE_EMAIL }}'
+        git config --global user.name '${{ inputs.GH_AUTO_RELEASE_USER }}'
+
+#    - name: Get last commit message
+#      shell: bash
+#      run: |
+#        commit_message=$(git log --format=%B -n 1 ${{ github.event.after }})
+#        echo "COMMIT_MSG=$commit_message" >> $GITHUB_ENV
+#
+#    - name: Check commit message and revert if it matches regex
+#      shell: bash
+#      run: |
+#        if [[ $COMMIT_MSG =~ ^Prepare\ release\ v${{ env.RELEASE_VERSION }} ]]; then
+#          echo "Commit message matches the pattern! Reverting..."
+#          git revert ${{ github.event.after }}
+#          git push origin HEAD:${{ github.ref }}
+#        else
+#          echo "Commit message doesn't match the pattern."
+#        fi
+
+    - name: Commit changes
+      shell: bash
+      run: |
+        make prepare-release TELEPRESENCE_VERSION=v${{ env.RELEASE_VERSION}}
+        git push origin HEAD:${{ github.ref }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
+
+
