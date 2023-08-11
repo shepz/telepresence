@@ -150,8 +150,9 @@ jobs:
     env:
       TELEPRESENCE_VERSION: ${{ needs.prepare-release.outputs.telepresence_version }}
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Create tag
         id: create_tag
         run: |
@@ -160,6 +161,8 @@ jobs:
           git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' ${{ env.TELEPRESENCE_VERSION }}
           git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' rpc/${{ env.TELEPRESENCE_VERSION }}
           git push origin {,rpc/}${{ env.TELEPRESENCE_VERSION }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
