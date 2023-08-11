@@ -2,20 +2,105 @@ name: Releases
 
 on:
   push:
-    tags:
-      # These aren't regexps. They are "Workflow Filter patterns"
-      - v[0-9]+.[0-9]+.[0-9]
-      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
+    branches:
+      - 'release/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - 'release/[0-9]+.[0-9]+.[0-9]+'
+    types: [ labeled ]
 
 jobs:
-  build-release:
+  prepare-release:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'release'))
+    runs-on: ubuntu-latest
+    outputs:
+      telepresence_version: ${{ steps.prepare.outputs.telepresence_version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get release type
+        id: get_release_type
+        shell: bash
+        run: |
+          echo "is_ga=false" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "is_ga=true" >> $GITHUB_ENV
+          fi
+      - name: Prepare release
+        id: prepare
+        uses: ./.github/actions/release/prepare
+        with:
+          gh_auto_release_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
+          gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
+          is_ga: ${{ env.is_ga }}
+
+  itests_build_image:
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '~1.20.7'
+      - name: Build dev image
+        run: |
+          make save-tel2-image
+      - name: Upload image
+        uses: actions/upload-artifact@v3
+        with:
+          name: image
+          path: build-output/tel2-image.tar
+  itests_run:
     strategy:
       fail-fast: false
       matrix:
         runners:
           - ubuntu-latest
           - macos-latest
-          - macOS-arm64
+          - windows-2019
+#          - macOS-arm64
+        clusters:
+          - distribution: Kubeception
+            version: "1.26"
+    runs-on: ${{ matrix.runners }}
+    needs: itests_build_image
+    steps:
+      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/install-dependencies
+#        name: install dependencies
+#      - uses: actions/download-artifact@v3
+#        with:
+#          name: image
+#      - run: make build
+#      - uses: ./.github/actions/prepare-cluster
+#        with:
+#          kubeception-token: ${{ secrets.DEV_TELEPRESENCE_KUBECEPTION_TOKEN }}
+#          kubeceptionProfile: small
+#          gke-credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#          tel-image: tel2-image.tar
+#          cluster-distribution: ${{ matrix.clusters.distribution }}
+#          cluster-version: ${{ matrix.clusters.version }}
+#        id: kluster
+#      - uses: ./.github/actions/integration-tests
+#        with:
+#          kubeconfig: "${{ steps.kluster.outputs.kubeconfig }}"
+#      - uses: ./.github/actions/upload-logs
+#        env:
+#          LOG_SUFFIX: "-${{ runner.os }}-${{ matrix.clusters.distribution }}-${{ matrix.clusters.version }}"
+#        if: always()
+
+
+  build-release:
+    needs:
+      - itests_run
+      - prepare-release
+    strategy:
+      fail-fast: false
+      matrix:
+        runners:
+          - ubuntu-latest
+          - macos-latest
+#          - macOS-arm64
           - windows-2019
     runs-on: ${{ matrix.runners }}
     steps:
@@ -26,7 +111,7 @@ jobs:
         name: install dependencies
       - name: set version
         shell: bash
-        run: echo "TELEPRESENCE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+        run: echo "TELEPRESENCE_VERSION=${{ needs.prepare-release.outputs.telepresence_version }}" >> $GITHUB_ENV
       - run: make release-binary
       - name: Upload binaries
         uses: actions/upload-artifact@v3
@@ -34,15 +119,30 @@ jobs:
           name: binaries
           path: build-output/release
           retention-days: 1
-      - if: runner.os == 'Linux' && runner.arch == 'X64'
-        name: Upload Docker image
-        run: |
-          docker login -u="${{ secrets.DOCKERHUB_USERNAME }}" -p="${{ secrets.DOCKERHUB_PASSWORD }}"
-          make push-tel2-image
+#      - if: runner.os == 'Linux' && runner.arch == 'X64'
+#        name: Upload Docker image
+#        run: |
+#          docker login -u="${{ secrets.DOCKERHUB_USERNAME }}" -p="${{ secrets.DOCKERHUB_PASSWORD }}"
+#          make push-tel2-image
   release:
     runs-on: ubuntu-latest
-    needs: build-release
+    needs:
+      - build-release
+      - prepare-release
+    env:
+      TELEPRESENCE_VERSION: ${{ needs.prepare-release.outputs.telepresence_version }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create tag
+        id: create_tag
+        run: |
+          git config --global user.email "${{ secrets.GH_AUTO_RELEASE_EMAIL }}"
+          git config --global user.name "${{ secrets.GH_AUTO_RELEASE_USER }}"
+          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' ${{ env.TELEPRESENCE_VERSION }}
+          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' rpc/${{ env.TELEPRESENCE_VERSION }}
+          git push origin {,rpc/}${{ env.TELEPRESENCE_VERSION }}
       - name: Download artifacts
         uses: actions/download-artifact@v3
       - name: Determine if version is RC or GA
@@ -62,6 +162,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ env.PRERELEASE }}
           makeLatest: ${{ env.MAKE_LATEST }}
+          tag: ${{ env.TELEPRESENCE_VERSION }}
           body: |
             ## Official Release Artifacts
             ### Linux
@@ -77,20 +178,20 @@ jobs:
 
             ![Assets](https://static.scarf.sh/a.png?x-pxid=d842651a-2e4d-465a-98e1-4808722c01ab)
 
-  test-release:
-    needs: release
-    strategy:
-      fail-fast: false
-      matrix:
-        runners:
-          - ubuntu-latest
-          - macos-latest
-          - macOS-arm64
-          - windows-2019
-    runs-on: ${{ matrix.runners }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test release
-        uses: ./.github/actions/test-release
-        with:
-          release_version: ${{ github.ref_name }}
+#  test-release:
+#    needs: release
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        runners:
+#          - ubuntu-latest
+#          - macos-latest
+#          - macOS-arm64
+#          - windows-2019
+#    runs-on: ${{ matrix.runners }}
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Test release
+#        uses: ./.github/actions/test-release
+#        with:
+#          release_version: ${{ needs.prepare-release.outputs.telepresence_version }}
