@@ -13,7 +13,10 @@ inputs:
   is_ga:
     description: "Is ga"
     required: true
-
+outputs:
+  telepresence_version:
+    description: "telepresence version"
+    value: ${{ steps.get_event.outputs.telepresence_version }}
 runs:
   using: composite
   steps:
