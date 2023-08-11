@@ -108,7 +108,9 @@ jobs:
 
 
   build-release:
-    needs: itests_run
+    needs:
+      - itests_run
+      - prepare-release
     strategy:
       fail-fast: false
       matrix:
