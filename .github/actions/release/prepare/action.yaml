@@ -21,7 +21,6 @@ runs:
       id: get_event
       shell: bash
       run: |
-        echo "RELEASE_MESSAGE=PWET" >> $GITHUB_ENV
         if [[ "${{ inputs.is_ga }}" == true ]]; then
           echo "RELEASE_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")" >> $GITHUB_ENV
         else

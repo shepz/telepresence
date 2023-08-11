@@ -31,6 +31,8 @@ jobs:
 
   prepare-release:
     runs-on: ubuntu-latest
+    outputs:
+      telepresence_version: v${{ env.RELEASE_VERSION}}
     steps:
       - uses: actions/checkout@v3
       - name: Get release type
@@ -124,7 +126,7 @@ jobs:
         name: install dependencies
       - name: set version
         shell: bash
-        run: echo "TELEPRESENCE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+        run: echo "TELEPRESENCE_VERSION=${{ needs.prepare-release.outputs.telepresence_version }}" >> $GITHUB_ENV
       - run: make release-binary
       - name: Upload binaries
         uses: actions/upload-artifact@v3
@@ -179,4 +181,4 @@ jobs:
       - name: Test release
         uses: ./.github/actions/test-release
         with:
-          release_version: ${{ github.ref_name }}
+          release_version: ${{ needs.prepare-release.outputs.telepresence_version }}
