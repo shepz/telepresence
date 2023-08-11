@@ -144,15 +144,28 @@ jobs:
 #          make push-tel2-image
   release:
     runs-on: ubuntu-latest
-    needs: build-release
+    needs:
+      - build-release
+      - prepare-release
+    env:
+      TELEPRESENCE_VERSION: ${{ needs.prepare-release.outputs.telepresence_version }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
+      - name: Create tag
+        id: create_tag
+        run: |
+          git config --local user.email "${{ secrets.GH_AUTO_RELEASE_EMAIL }}"
+          git config --local user.name "${{ secrets.GH_AUTO_RELEASE_USER }}"
+          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' ${{ env.TELEPRESENCE_VERSION }}
+          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' rpc/${{ env.TELEPRESENCE_VERSION }}
+          git push origin {,rpc/}${{ env.TELEPRESENCE_VERSION }}
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           artifacts: "binaries/*"
           token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.TELEPRESENCE_VERSION }}
           body: |
             ## Official Release Artifacts
             ### Linux
