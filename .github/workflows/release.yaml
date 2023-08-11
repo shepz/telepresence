@@ -32,7 +32,7 @@ jobs:
   prepare-release:
     runs-on: ubuntu-latest
     outputs:
-      telepresence_version: v${{ env.RELEASE_VERSION}}
+      telepresence_version: ${{ steps.prepare.outputs.telepresence_version }}
     steps:
       - uses: actions/checkout@v3
       - name: Get release type
@@ -44,6 +44,7 @@ jobs:
           echo "is_ga=true" >> $GITHUB_ENV
           fi
       - name: Prepare release
+        id: prepare
         uses: ./.github/actions/release/prepare
         with:
           gh_auto_release_token: ${{ secrets.GITHUB_TOKEN }}
