@@ -52,7 +52,8 @@ runs:
           echo "NEXT_TAG"
           echo $NEXT_TAG
 
-          echo "RELEASE_VERSION=$(echo $NEXT_TAG)" >> $GITHUB_ENV
+          echo "TELEPRESENCE_VERSION=v$(echo $NEXT_TAG)" >> $GITHUB_ENV
+          echo "TELEPRESENCE_VERSION=v$(echo $NEXT_TAG)" >> $GITHUB_OUTPUT
 
         fi
 
@@ -84,7 +85,7 @@ runs:
     - name: Commit changes
       shell: bash
       run: |
-        make prepare-release TELEPRESENCE_VERSION=v${{ env.RELEASE_VERSION}}
+        make prepare-release
         git push origin HEAD:${{ github.ref }}
       env:
         GITHUB_TOKEN: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
