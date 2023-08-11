@@ -3,32 +3,11 @@ name: Releases
 on:
   push:
     branches:
-      - release/2.*
+      - 'release/[0-9]+.[0-9]+.[0-9]+'
   pull_request_review:
     types: [submitted]
 
 jobs:
-#  check-commit:
-#    if: >
-#      (github.event_name == 'push') ||
-#      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved')
-#    runs-on: ubuntu-latest
-#    outputs:
-#      skip: ${{ steps.skip_check.outputs.skip }}
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Check Commit Message
-#        id: skip_check
-#        run: |
-#          commit_message=$(git log --format=%B -n 1 ${{ github.sha }})
-#          if [[ $commit_message =~ ^Prepare\ release\ v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
-#            echo "This is a release commit."
-#            echo "is_release=true" >> $GITHUB_OUTPUT
-#          else
-#            echo "This is NOT a release commit."
-#            echo "is_release=false" >> $GITHUB_OUTPUT
-#          fi
-
   prepare-release:
     runs-on: ubuntu-latest
     outputs:
