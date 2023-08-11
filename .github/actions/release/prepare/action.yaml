@@ -53,7 +53,7 @@ runs:
           echo $NEXT_TAG
 
           echo "TELEPRESENCE_VERSION=v$(echo $NEXT_TAG)" >> $GITHUB_ENV
-          echo "TELEPRESENCE_VERSION=v$(echo $NEXT_TAG)" >> $GITHUB_OUTPUT
+          echo "telepresence_version=v$(echo $NEXT_TAG)" >> $GITHUB_OUTPUT
 
         fi
 
