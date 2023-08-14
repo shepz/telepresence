@@ -10,9 +10,32 @@ on:
     types: [ labeled ]
 
 jobs:
-  prepare-release:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'release'))
+  check-commit:
     runs-on: ubuntu-latest
+    outputs:
+      is_release_commit: ${{ steps.commit_message.outputs.is_release_commit }}
+      telepresence_version: ${{ steps.commit_message.outputs.telepresence_version }}
+    steps:
+      - name: Check Commit Message
+        id: commit_message
+        run: |
+          commit_message=$(git log --format=%s -n 1)
+          if [[ $commit_message =~ ^Prepare\ v([0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)$ ]]; then
+            echo "This is a release commit. Skipping further jobs."
+            echo "is_release_commit=1" >> $GITHUB_OUTPUT
+            version=${BASH_REMATCH[1]}
+            echo "Extracted version is: $version"
+            echo "telepresence_version=$version" >> $GITHUB_OUTPUT
+          else
+            echo "This is NOT a release commit. Skipping further jobs."
+            echo "is_release_commit=0" >> $GITHUB_OUTPUT
+          fi
+
+
+  prepare-release:
+    if: needs.check-commit.outputs.is_release_commit == 0 && (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'release')))
+    runs-on: ubuntu-latest
+    needs: check-commit
     outputs:
       telepresence_version: ${{ steps.prepare.outputs.telepresence_version }}
     steps:
@@ -29,71 +52,14 @@ jobs:
         id: prepare
         uses: ./.github/actions/release/prepare
         with:
-          gh_auto_release_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
           is_ga: ${{ env.is_ga }}
 
-  itests_build_image:
-    runs-on: ubuntu-latest
-    needs: prepare-release
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '~1.20.7'
-      - name: Build dev image
-        run: |
-          make save-tel2-image
-      - name: Upload image
-        uses: actions/upload-artifact@v3
-        with:
-          name: image
-          path: build-output/tel2-image.tar
-  itests_run:
-    strategy:
-      fail-fast: false
-      matrix:
-        runners:
-          - ubuntu-latest
-          - macos-latest
-          - windows-2019
-#          - macOS-arm64
-        clusters:
-          - distribution: Kubeception
-            version: "1.26"
-    runs-on: ${{ matrix.runners }}
-    needs: itests_build_image
-    steps:
-      - uses: actions/checkout@v3
-#      - uses: ./.github/actions/install-dependencies
-#        name: install dependencies
-#      - uses: actions/download-artifact@v3
-#        with:
-#          name: image
-#      - run: make build
-#      - uses: ./.github/actions/prepare-cluster
-#        with:
-#          kubeception-token: ${{ secrets.DEV_TELEPRESENCE_KUBECEPTION_TOKEN }}
-#          kubeceptionProfile: small
-#          gke-credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-#          tel-image: tel2-image.tar
-#          cluster-distribution: ${{ matrix.clusters.distribution }}
-#          cluster-version: ${{ matrix.clusters.version }}
-#        id: kluster
-#      - uses: ./.github/actions/integration-tests
-#        with:
-#          kubeconfig: "${{ steps.kluster.outputs.kubeconfig }}"
-#      - uses: ./.github/actions/upload-logs
-#        env:
-#          LOG_SUFFIX: "-${{ runner.os }}-${{ matrix.clusters.distribution }}-${{ matrix.clusters.version }}"
-#        if: always()
-
-
   build-release:
     needs:
-      - itests_run
-      - prepare-release
+      - check-commit
     strategy:
       fail-fast: false
       matrix:
@@ -111,7 +77,7 @@ jobs:
         name: install dependencies
       - name: set version
         shell: bash
-        run: echo "TELEPRESENCE_VERSION=${{ needs.prepare-release.outputs.telepresence_version }}" >> $GITHUB_ENV
+        run: echo "TELEPRESENCE_VERSION=${{ needs.check-commit.outputs.telepresence_version }}" >> $GITHUB_ENV
       - run: make release-binary
       - name: Upload binaries
         uses: actions/upload-artifact@v3
@@ -128,9 +94,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-release
-      - prepare-release
+      - check-commit
     env:
-      TELEPRESENCE_VERSION: ${{ needs.prepare-release.outputs.telepresence_version }}
+      TELEPRESENCE_VERSION: ${{ needs.check-commit.outputs.telepresence_version }}
     steps:
       - uses: actions/checkout@v3
         with:
