@@ -18,6 +18,8 @@ jobs:
       telepresence_version: ${{ steps.commit_message.outputs.telepresence_version }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Check Commit Message
         id: commit_message
         run: |
