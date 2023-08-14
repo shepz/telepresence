@@ -59,6 +59,7 @@ jobs:
           is_ga: ${{ env.is_ga }}
 
   build-release:
+    if: needs.check-commit.outputs.is_release_commit == 1
     needs:
       - check-commit
     strategy:
