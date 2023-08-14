@@ -16,6 +16,7 @@ jobs:
       is_release_commit: ${{ steps.commit_message.outputs.is_release_commit }}
       telepresence_version: ${{ steps.commit_message.outputs.telepresence_version }}
     steps:
+      - uses: actions/checkout@v3
       - name: Check Commit Message
         id: commit_message
         run: |
