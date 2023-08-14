@@ -194,7 +194,7 @@ jobs:
       - name: Determine if version is RC or GA
         id: semver_check
         run: |
-          if [[ "${{ github.ref_name }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
+          if [[ "${{ env.TELEPRESENCE_VERSION }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
           echo "MAKE_LATEST=false" >> $GITHUB_ENV
           echo "PRERELEASE=true" >> $GITHUB_ENV
           else
