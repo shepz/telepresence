@@ -37,7 +37,7 @@ jobs:
               if ! git rev-parse "$version" >& /dev/null; then
                 echo "Match found and tag does not exist for: $version"
                 echo "is_prepare_release=0" >> $GITHUB_OUTPUT
-                echo "telepresence_version=v$version" >> $GITHUB_OUTPUT
+                echo "telepresence_version=$version" >> $GITHUB_OUTPUT
 
               else
                 echo "Match found but a tag already exists for: $version"
