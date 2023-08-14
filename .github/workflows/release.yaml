@@ -41,6 +41,8 @@ jobs:
       telepresence_version: ${{ steps.prepare.outputs.telepresence_version }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
       - name: Get release type
         id: get_release_type
         shell: bash
