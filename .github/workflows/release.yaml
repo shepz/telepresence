@@ -23,6 +23,7 @@ jobs:
       - name: Check Commit Message
         id: commit_message
         run: |
+          git fetch origin release/v2
           current_version=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
           commit_subject=$(git log release/v2..HEAD --format=%s | grep -m1 "^Prepare v$current_version\+\(-rc\.[0-9]\+\)\?")
 
