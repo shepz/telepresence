@@ -28,22 +28,10 @@ runs:
           echo "RELEASE_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")" >> $GITHUB_ENV
         else
           CURRENT_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
-          echo "CURRENT_VERSION"
-          echo $CURRENT_VERSION
           git fetch --tags
           TAGS=$(git tag | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$" | sort -V)
-          echo "TAGS"
-          echo $TAGS
-
           ESCAPED_CURRENT_VERSION=$(echo $CURRENT_VERSION | sed 's/\./\\./g')
-
-          echo "ESCAPED_CURRENT_VERSION"
-          echo $ESCAPED_CURRENT_VERSION
-
           LAST_TAG=$(echo "$TAGS" | grep -E "^v$ESCAPED_CURRENT_VERSION(-rc\.[0-9]+)?$") || true
-
-          echo "LAST_TAG"
-          echo $LAST_TAG
 
           if [[ "$LAST_TAG" =~ -rc\.([0-9]+)$ ]]; then
             RC_NUM=${BASH_REMATCH[1]}
@@ -52,8 +40,6 @@ runs:
           else
             NEXT_TAG="$CURRENT_VERSION-rc.0"
           fi
-          echo "NEXT_TAG"
-          echo $NEXT_TAG
 
           echo "telepresence_version=v$(echo $NEXT_TAG)" >> $GITHUB_OUTPUT
 
