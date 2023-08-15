@@ -13,10 +13,9 @@ inputs:
   is_ga:
     description: "Is ga"
     required: true
-outputs:
   telepresence_version:
     description: "telepresence version"
-    value: ${{ steps.get_event.outputs.telepresence_version }}
+    required: true
 runs:
   using: composite
   steps:
@@ -25,7 +24,7 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.is_ga }}" == true ]]; then
-          echo "telepresence_version=v$(echo ${{ github.head_ref }} | sed -e "s/^release\///")" >> $GITHUB_OUTPUT
+          echo "TELEPRESENCE_VERSION=${{ inputs.telepresence_version }}" >> $GITHUB_ENV
         else
           CURRENT_VERSION=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
           git fetch --tags
@@ -41,7 +40,7 @@ runs:
             NEXT_TAG="$CURRENT_VERSION-rc.0"
           fi
 
-          echo "telepresence_version=v$(echo $NEXT_TAG)" >> $GITHUB_OUTPUT
+          echo "TELEPRESENCE_VERSION=v$(echo $NEXT_TAG)" >> $GITHUB_ENV
 
         fi
 
@@ -56,8 +55,12 @@ runs:
     - name: Commit changes
       shell: bash
       run: |
-        make prepare-release TELEPRESENCE_VERSION=${{ steps.get_event.outputs.telepresence_version }}
-        git push origin HEAD:${{ github.ref }}
+        make prepare-release
+        if [[ "${{ inputs.is_ga }}" == true ]]; then
+          git push origin HEAD:${{ github.head_ref }}
+        else
+          git push origin HEAD:${{ github.ref }}
+        fi
       env:
         GITHUB_TOKEN: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
 
