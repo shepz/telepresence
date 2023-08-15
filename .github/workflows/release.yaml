@@ -61,8 +61,6 @@ jobs:
     if: needs.check-commit.outputs.is_prepare_release == 1
     runs-on: ubuntu-latest
     needs: check-commit
-    outputs:
-      telepresence_version: ${{ steps.prepare.outputs.telepresence_version }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -83,6 +81,7 @@ jobs:
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
           is_ga: ${{ env.is_ga }}
+          telepresence_version: ${{ needs.check-commit.outputs.telepresence_version }}
 
   itests_build_image:
     if: needs.check-commit.outputs.is_prepare_release == 0
