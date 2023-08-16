@@ -28,7 +28,8 @@ jobs:
             current_version=$(echo ${{ github.head_ref }} | sed -e "s/^release\///")
             BASE_REF=$(git rev-parse refs/remotes/origin/${{ github.base_ref }})
             HEAD_REF=$(git rev-parse refs/remotes/origin/${{ github.head_ref }})
-            commit_subject=$(git log $BASE_REF..$HEAD_REF --format=%s | grep -m1 "^Prepare v$current_version$")
+            echo $BASE_REF
+            commit_subject=$(git log "$BASE_REF".."$HEAD_REF" --format=%s | grep -m1 "^Prepare v${current_version}$")
           else
             current_version=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
             commit_subject=$(git log FETCH_HEAD..HEAD --format=%s | grep -m1 "^Prepare v$current_version\+-rc\.[0-9]\+$")
