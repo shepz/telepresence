@@ -32,7 +32,7 @@ jobs:
             commit_subject=$(git log "$BASE_REF".."$HEAD_REF" --format=%s | grep -m1 "^Prepare v${current_version}$") || true
           else
             current_version=$(echo $GITHUB_REF | sed -e "s/^refs\/heads\/release\///")
-            commit_subject=$(git log FETCH_HEAD..HEAD --format=%s | grep -m1 "^Prepare v$current_version\+-rc\.[0-9]\+$") || true
+            commit_subject=$(git log FETCH_HEAD..HEAD --format=%s | grep -m1 "^Prepare v${current_version}\+-rc\.[0-9]\+$") || true
           fi
           echo $current_version
           echo $commit_subject
