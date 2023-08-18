@@ -164,6 +164,7 @@ jobs:
       matrix:
         runners:
           - ubuntu-latest
+          - ubuntu-arm64
           - macos-latest
 #          - macOS-arm64
           - windows-2019
@@ -177,7 +178,8 @@ jobs:
       - name: set version
         shell: bash
         run: echo "TELEPRESENCE_VERSION=${{ needs.check-commit.outputs.telepresence_version }}" >> $GITHUB_ENV
-      - run: make release-binary
+      - name: generate binaries
+        run: make release-binary
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
@@ -232,6 +234,7 @@ jobs:
             ## Official Release Artifacts
             ### Linux
                - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
+               - 📦 [telepresence-linux-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-arm64)
             ### OSX Darwin
                - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-amd64)
                - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-arm64)
@@ -250,6 +253,7 @@ jobs:
 #      matrix:
 #        runners:
 #          - ubuntu-latest
+#          - ubuntu-arm64
 #          - macos-latest
 #          - macOS-arm64
 #          - windows-2019
