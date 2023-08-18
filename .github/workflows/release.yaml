@@ -168,7 +168,7 @@ jobs:
       matrix:
         runners:
           - ubuntu-latest
-          - ubuntu-arm64
+#          - ubuntu-arm64
           - macos-latest
 #          - macOS-arm64
           - windows-2019
