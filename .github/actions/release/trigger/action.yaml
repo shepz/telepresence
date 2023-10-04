@@ -61,7 +61,16 @@ runs:
       shell: bash
       run: |
         echo "$GOPATH/bin" >> $GITHUB_PATH
+        echo "GO path: $GOPATH"
         echo "Updated PATH: $PATH"
+
+    - name: List contents of $GOPATH/bin
+      shell: bash
+      run: ls -l $GOPATH/bin
+
+    - name: Call mockgen directly using absolute path
+      shell: bash
+      run: $GOPATH/bin/mockgen --version
 
     - name: Check mockgen installation
       shell: bash
