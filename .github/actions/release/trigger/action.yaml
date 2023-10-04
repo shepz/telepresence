@@ -53,7 +53,7 @@ runs:
       env:
         TELEPRESENCE_VERSION: ${{ inputs.telepresence_version }}
       run: |
-        ${{ inputs.command }}
+        ${{ inputs.commands }}
 
     - name: Create pull request
       uses: peter-evans/create-pull-request@v5.0.1
