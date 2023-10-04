@@ -50,6 +50,8 @@ runs:
     - name: Execute command
       shell: bash
       working-directory: ./remote_repo
+      env:
+        TELEPRESENCE_VERSION: ${{ inputs.telepresence_version }}
       run: |
         ${{ inputs.command }}
 
