@@ -1,0 +1,63 @@
+name: Trigger other releases
+description: "Trigger - Trigger other releases"
+inputs:
+  gh_auto_release_token:
+    description: "The token to use to authenticate with GitHub"
+    required: true
+  gh_auto_release_email:
+    description: "The email to use to authenticate with GitHub"
+    required: true
+  gh_auto_release_user:
+    description: "The user to use to authenticate with GitHub"
+    required: true
+  telepresence_version:
+    description: "The current release of Telepresence in the form of vX.Y.Z[-rc.N]"
+    required: true
+  repository:
+    description: "The repository to upgrade"
+    required: true
+  commands:
+    description: "The command to run"
+    required: true
+#  team-reviewers:
+#    description: "The team to review the pull request"
+#    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout other repo
+      uses: actions/checkout@v3
+      with:
+        path: remote_repo
+        repository: ${{ inputs.repository }}
+        token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
+        persist-credentials: false
+
+    - name: Setup Git Config
+      shell: bash
+      run: |
+        set -x
+
+        git config --global user.email '${{ inputs.GH_AUTO_RELEASE_EMAIL }}'
+        git config --global user.name '${{ inputs.GH_AUTO_RELEASE_USER }}'
+
+    - name: Set environment variables
+      shell: bash
+      run: |
+        echo "RELEASE_BRANCH_NAME=release/$(echo ${{ inputs.telepresence_version }} | sed 's/^v//;s/-rc\.[0-9]*$//')" >> $GITHUB_ENV
+
+    - name: Execute command
+      shell: bash
+      working-directory: ./remote_repo
+      run: |
+        ${{ inputs.command }}
+
+    - name: Create pull request
+      uses: peter-evans/create-pull-request@v5.0.1
+      with:
+        path: ./remote_repo
+        title: ${{ env.RELEASE_MESSAGE }}
+        branch: ${{ env.RELEASE_BRANCH_NAME }}
+        token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
+        body: ${{ env.RELEASE_MESSAGE }}
