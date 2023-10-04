@@ -49,6 +49,18 @@ runs:
       run: |
         echo "RELEASE_BRANCH_NAME=release/$(echo ${{ inputs.telepresence_version }} | sed 's/^v//;s/-rc\.[0-9]*$//')" >> $GITHUB_ENV
 
+    - uses: actions/setup-go@v3
+      with:
+        go-version: '~1.21.0'
+
+    - name: Install GoMock
+      shell: bash
+      run: go get github.com/golang/mock/mockgen@latest
+
+    - name: Add Go tools to PATH
+      shell: bash
+      run: echo "$GOPATH/bin" >> $GITHUB_PATH
+
     - name: Execute command
       shell: bash
       working-directory: ./remote_repo
