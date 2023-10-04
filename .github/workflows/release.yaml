@@ -225,10 +225,9 @@ jobs:
           - repository: shepz/telepresence-pro
             commands: "make prepare-release && make generate"
     steps:
-      - uses: actions/checkout@v3
       - name: Trigger other releases
         id: trigger
-        uses: ./.github/actions/release/trigger
+        uses: shepz/telepresence-internal-actions/auto-pr-tag-release-action@master
         with:
           gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
