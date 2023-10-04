@@ -229,6 +229,8 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '~1.21.0'
+      - name: Install GoMock
+        run: go get github.com/golang/mock/mockgen@latest
       - name: Trigger other releases
         id: trigger
         uses: ./.github/actions/release/trigger
