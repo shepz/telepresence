@@ -226,6 +226,9 @@ jobs:
             commands: "make prepare-release && make generate"
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '~1.21.0'
       - name: Trigger other releases
         id: trigger
         uses: ./.github/actions/release/trigger
