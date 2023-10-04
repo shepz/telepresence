@@ -223,7 +223,7 @@ jobs:
           - shepz/telepresence-pro
         include:
           - repository: shepz/telepresence-pro
-            commands: "make prepare-release && make generate"
+            commands: "make prepare-release && make generate && make push-tags"
     steps:
       - name: Trigger other releases
         id: trigger
