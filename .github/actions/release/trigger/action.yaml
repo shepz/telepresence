@@ -59,21 +59,29 @@ runs:
 
     - name: Add Go tools to PATH
       shell: bash
-      run: echo "$GOPATH/bin" >> $GITHUB_PATH
-
-    - name: Execute command
-      shell: bash
-      working-directory: ./remote_repo
-      env:
-        TELEPRESENCE_VERSION: ${{ inputs.telepresence_version }}
       run: |
-        ${{ inputs.commands }}
+        echo "$GOPATH/bin" >> $GITHUB_PATH
+        echo "Updated PATH: $PATH"
 
-    - name: Create pull request
-      uses: peter-evans/create-pull-request@v5.0.1
-      with:
-        path: ./remote_repo
-        title: "Telepresence ${{ env.RELEASE_BRANCH_NAME }}"
-        branch: ${{ env.RELEASE_BRANCH_NAME }}
-        token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
-        body: "New telepresence release"
+    - name: Check mockgen installation
+      shell: bash
+      run: |
+        which mockgen
+        mockgen --version
+
+#    - name: Execute command
+#      shell: bash
+#      working-directory: ./remote_repo
+#      env:
+#        TELEPRESENCE_VERSION: ${{ inputs.telepresence_version }}
+#      run: |
+#        ${{ inputs.commands }}
+#
+#    - name: Create pull request
+#      uses: peter-evans/create-pull-request@v5.0.1
+#      with:
+#        path: ./remote_repo
+#        title: "Telepresence ${{ env.RELEASE_BRANCH_NAME }}"
+#        branch: ${{ env.RELEASE_BRANCH_NAME }}
+#        token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
+#        body: "New telepresence release"
