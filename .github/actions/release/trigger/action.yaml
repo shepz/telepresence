@@ -57,7 +57,7 @@ runs:
       uses: peter-evans/create-pull-request@v5.0.1
       with:
         path: ./remote_repo
-        title: ${{ env.RELEASE_MESSAGE }}
+        title: "Telepresence ${{ env.RELEASE_BRANCH_NAME }}"
         branch: ${{ env.RELEASE_BRANCH_NAME }}
         token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
-        body: ${{ env.RELEASE_MESSAGE }}
+        body: "New telepresence release"
