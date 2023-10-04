@@ -55,22 +55,7 @@ runs:
 
     - name: Install GoMock
       shell: bash
-      run: go get github.com/golang/mock/mockgen@latest
-
-    - name: Add Go tools to PATH
-      shell: bash
-      run: |
-        echo "$GOPATH/bin" >> $GITHUB_PATH
-        echo "GO path: $GOPATH"
-        echo "Updated PATH: $PATH"
-
-    - name: List contents of $GOPATH/bin
-      shell: bash
-      run: ls -l $GOPATH/bin
-
-    - name: Call mockgen directly using absolute path
-      shell: bash
-      run: $GOPATH/bin/mockgen --version
+      run: go install github.com/golang/mock/mockgen@v1.6.0
 
     - name: Check mockgen installation
       shell: bash
