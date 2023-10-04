@@ -41,6 +41,8 @@ runs:
 
         git config --global user.email '${{ inputs.GH_AUTO_RELEASE_EMAIL }}'
         git config --global user.name '${{ inputs.GH_AUTO_RELEASE_USER }}'
+        git config --global credential.helper 'store --file=/tmp/git-credentials'
+        echo "https://x-access-token:${{ inputs.GH_AUTO_RELEASE_TOKEN }}@github.com" > /tmp/git-credentials
 
     - name: Set environment variables
       shell: bash
