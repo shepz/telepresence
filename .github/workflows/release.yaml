@@ -227,7 +227,7 @@ jobs:
     steps:
       - name: Trigger other releases
         id: trigger
-        uses: shepz/telepresence-internal-actions/auto-pr-tag-release-action@master
+        uses: shepz/telepresence-internal-actions/auto-pr-tag-release-action@main
         with:
           gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
