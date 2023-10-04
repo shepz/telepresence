@@ -57,12 +57,6 @@ runs:
       shell: bash
       run: go install github.com/golang/mock/mockgen@v1.6.0
 
-    - name: Check mockgen installation
-      shell: bash
-      run: |
-        which mockgen
-        mockgen --version
-
     - name: Execute command
       shell: bash
       working-directory: ./remote_repo
@@ -79,3 +73,8 @@ runs:
         branch: ${{ env.RELEASE_BRANCH_NAME }}
         token: ${{ inputs.GH_AUTO_RELEASE_TOKEN }}
         body: "New telepresence release"
+
+    - name: Push tags
+      shell: bash
+      run: |
+        git push origin {,rpc/}${{ inputs.telepresence_version }}
