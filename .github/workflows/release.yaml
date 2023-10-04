@@ -223,7 +223,7 @@ jobs:
           - shepz/telepresence-pro
         include:
           - repository: shepz/telepresence-pro
-            commands: "make prepare-release TELEPRESENCE_VERSION=${{ env.TELEPRESENCE_VERSION }} && make generate"
+            commands: "make prepare-release && make generate"
     steps:
       - uses: actions/checkout@v3
       - name: Trigger other releases
