@@ -247,7 +247,8 @@ jobs:
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
           telepresence_version: ${{ env.TELEPRESENCE_VERSION }}
           repository: "shepz/telepresence-pro"
-          commands: "make prepare-release && make generate && make push-tags"
+          commands: "make prepare-release && make generate"
+          post_commands: "make push-tags"
 
 #  test-release:
 #    needs: release
