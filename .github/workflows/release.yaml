@@ -214,13 +214,12 @@ jobs:
         with:
           payload: |
             {
-              "text": "Telepresence Release Update 🚀",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "Telepresence Release Update"
+                    "text": "Telepresence OSS Release Update 🚀"
                   }
                 },
                 {
