@@ -196,13 +196,13 @@ jobs:
           body: |
             ## Official Release Artifacts
             ### Linux
-               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
-               - 📦 [telepresence-linux-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-arm64)
+               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-linux-amd64)
+               - 📦 [telepresence-linux-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-linux-arm64)
             ### OSX Darwin
-               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-amd64)
-               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-arm64)
+               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-darwin-amd64)
+               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-darwin-arm64)
             ### Windows
-               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-windows-amd64.zip)
+               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-windows-amd64.zip)
 
             For more builds across platforms and architectures, see the `Assets` section below.
             And for more information, visit our [installation docs](https://www.telepresence.io/docs/latest/quick-start/).
@@ -215,7 +215,7 @@ jobs:
       - release
       - check-commit
     env:
-      TELEPRESENCE_VERSION: ${{ github.ref_name }}
+      TELEPRESENCE_VERSION: ${{ needs.check-commit.outputs.telepresence_version }}
     steps:
       - name: Trigger other releases
         id: trigger
