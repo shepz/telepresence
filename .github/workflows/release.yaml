@@ -208,21 +208,36 @@ jobs:
             And for more information, visit our [installation docs](https://www.telepresence.io/docs/latest/quick-start/).
 
             ![Assets](https://static.scarf.sh/a.png?x-pxid=d842651a-2e4d-465a-98e1-4808722c01ab)
-      - name: Send custom JSON data to Slack workflow
+      - name: Notify Developers about Release
         id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          # For posting a rich message using Block Kit
           payload: |
             {
-              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "text": "Telepresence Release Update 🚀",
               "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Telepresence Release Update"
+                  }
+                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                    "text": "*Version:* ${{ env.TELEPRESENCE_VERSION }}\n*Status:* ${{ job.status }}"
                   }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Check the build details <${{ github.event.pull_request.html_url || github.event.head_commit.url }}|here>."
+                    }
+                  ]
                 }
               ]
             }
