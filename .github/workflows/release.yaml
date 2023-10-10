@@ -210,39 +210,11 @@ jobs:
             ![Assets](https://static.scarf.sh/a.png?x-pxid=d842651a-2e4d-465a-98e1-4808722c01ab)
       - name: Notify Developers about Release
         id: slack
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: shepz/telepresence-internal-actions/slack-notification-release-success@main
         with:
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "Telepresence OSS Release Update 🚀"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Version:* ${{ env.TELEPRESENCE_VERSION }}\n*Status:* ${{ job.status }}"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Check the build details <${{ github.event.pull_request.html_url || github.event.head_commit.url }}|here>."
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          telepresence_version: ${{ env.TELEPRESENCE_VERSION }}
+          telepresence_product: "OSS"
 
   trigger-pro-release:
     runs-on: ubuntu-latest
@@ -254,7 +226,7 @@ jobs:
     steps:
       - name: Trigger other releases
         id: trigger
-        uses: shepz/telepresence-internal-actions/auto-pr-tag-release-action@main
+        uses: shepz/telepresence-internal-actions/execute-release-commands@main
         with:
           gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
@@ -269,44 +241,11 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: technote-space/workflow-conclusion-action@v3
-      - name: Notify Developers about Job Failure
-        if: env.WORKFLOW_CONCLUSION == 'failure' || env.WORKFLOW_CONCLUSION == 'cancelled'
-        uses: slackapi/slack-github-action@v1.24.0
+      - name: Notify Developers about Workflow Error
+        id: slack
+        uses: shepz/telepresence-internal-actions/slack-notification-workflow-error@main
         with:
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "⚠️ Telepresence Release Failed!"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Check the build details <${{ github.event.pull_request.html_url || github.event.head_commit.url }}|here>."
-                    }
-                  ]
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Telepresence team, please investigate the issue."
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 #  test-release:
 #    needs: release
 #    strategy:
