@@ -175,7 +175,7 @@ jobs:
           post_commands: "make push-tags"
 
   slack-notification:
-    needs: [trigger-pro-release, prepare-release]
+    needs: trigger-pro-release
     runs-on: ubuntu-latest
     if: always()
     steps:
