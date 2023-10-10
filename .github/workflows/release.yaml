@@ -267,10 +267,11 @@ jobs:
   slack-notification:
     needs: trigger-pro-release
     runs-on: ubuntu-latest
-    if: |
-      always() && github.workflow_conclusion == 'failure'
+    if: always()
     steps:
+      - uses: technote-space/workflow-conclusion-action@v3
       - name: Notify Developers about Job Failure
+        if: env.WORKFLOW_CONCLUSION == 'failure' || env.WORKFLOW_CONCLUSION == 'cancelled'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
