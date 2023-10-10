@@ -11,7 +11,7 @@ on:
 
 jobs:
   check-commit:
-    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'release')))
+    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && (github.event.label.name == 'GA' || github.event.label.name == 'RC))) && github.actor != 'shepz-automaton'
     runs-on: ubuntu-latest
     outputs:
       is_prepare_release: ${{ steps.check.outputs.is_prepare_release }}
@@ -23,12 +23,8 @@ jobs:
       - name: Check commit
         id: check
         uses: shepz/telepresence-internal-actions/check-commit@main
-      - name: check github actor
-        run: |
-          echo "github.actor=${{ github.actor }}"
 
   prepare-release:
-    if: github.actor != 'shepz-automaton'
     runs-on: ubuntu-latest
     needs: check-commit
     steps:
