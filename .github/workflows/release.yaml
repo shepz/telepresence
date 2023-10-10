@@ -2,64 +2,13 @@ name: Releases
 
 on:
   push:
-    branches:
-      - 'release/[0-9]+.[0-9]+.[0-9]+'
-  pull_request:
-    branches:
-      - 'release/**'
-    types: [ labeled ]
+    tags:
+      # These aren't regexps. They are "Workflow Filter patterns"
+      - v[0-9]+.[0-9]+.[0-9]
+      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
 
 jobs:
-  check-commit:
-    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'release')))
-    runs-on: ubuntu-latest
-    outputs:
-      is_prepare_release: ${{ steps.check.outputs.is_prepare_release }}
-      telepresence_version: ${{ steps.check.outputs.telepresence_version }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Check commit
-        id: check
-        uses: ./.github/actions/release/check-commit
-
-  prepare-release:
-    if: needs.check-commit.outputs.is_prepare_release == 1
-    runs-on: ubuntu-latest
-    needs: check-commit
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '~1.21.0'
-
-      - name: Get release type
-        id: get_release_type
-        shell: bash
-        run: |
-          echo "is_ga=false" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          echo "is_ga=true" >> $GITHUB_ENV
-          fi
-      - name: Prepare release
-        id: prepare
-        uses: ./.github/actions/release/prepare
-        with:
-          gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
-          gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
-          gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
-          is_ga: ${{ env.is_ga }}
-          telepresence_version: ${{ needs.check-commit.outputs.telepresence_version }}
-
   itests_build_image:
-    if: needs.check-commit.outputs.is_prepare_release == 0
-    needs:
-      - check-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -116,7 +65,6 @@ jobs:
 
   build-release:
     needs:
-      - check-commit
       - itests_run
     strategy:
       fail-fast: false
@@ -136,7 +84,7 @@ jobs:
         name: install dependencies
       - name: set version
         shell: bash
-        run: echo "TELEPRESENCE_VERSION=${{ needs.check-commit.outputs.telepresence_version }}" >> $GITHUB_ENV
+        run: echo "TELEPRESENCE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
       - name: generate binaries
         run: make release-binary
       - name: Upload binaries
@@ -155,9 +103,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-release
-      - check-commit
     env:
-      TELEPRESENCE_VERSION: ${{ needs.check-commit.outputs.telepresence_version }}
+      TELEPRESENCE_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -165,14 +112,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '~1.21.0'
-      - name: Create tag
-        id: create_tag
-        run: |
-          git config --global user.email "${{ secrets.GH_AUTO_RELEASE_EMAIL }}"
-          git config --global user.name "${{ secrets.GH_AUTO_RELEASE_USER }}"
-          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' ${{ env.TELEPRESENCE_VERSION }}
-          git tag --annotate --message='${{ env.TELEPRESENCE_VERSION }}' rpc/${{ env.TELEPRESENCE_VERSION }}
-          git push origin {,rpc/}${{ env.TELEPRESENCE_VERSION }}
       - name: Download artifacts
         uses: actions/download-artifact@v3
       - name: Determine if version is RC or GA
@@ -220,9 +159,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - release
-      - check-commit
     env:
-      TELEPRESENCE_VERSION: ${{ needs.check-commit.outputs.telepresence_version }}
+      TELEPRESENCE_VERSION: ${{ github.ref_name }}
     steps:
       - name: Trigger other releases
         id: trigger
@@ -237,7 +175,7 @@ jobs:
           post_commands: "make push-tags"
 
   slack-notification:
-    needs: trigger-pro-release
+    needs: [trigger-pro-release, prepare-release]
     runs-on: ubuntu-latest
     if: always()
     steps:
