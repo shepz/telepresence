@@ -25,7 +25,6 @@ jobs:
         uses: shepz/telepresence-internal-actions/check-commit@main
 
   prepare-release:
-    if: needs.check-commit.outputs.is_prepare_release == 1
     runs-on: ubuntu-latest
     needs: check-commit
     steps:
