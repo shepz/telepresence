@@ -285,13 +285,6 @@ jobs:
                   }
                 },
                 {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Version:* ${{ env.TELEPRESENCE_VERSION }}\n*Status:* Failed"
-                  }
-                },
-                {
                   "type": "context",
                   "elements": [
                     {
