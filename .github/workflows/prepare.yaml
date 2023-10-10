@@ -25,6 +25,7 @@ jobs:
         uses: shepz/telepresence-internal-actions/check-commit@main
 
   prepare-release:
+    if: github.actor != 'd6e-automaton'
     runs-on: ubuntu-latest
     needs: check-commit
     steps:
