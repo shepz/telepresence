@@ -51,7 +51,7 @@ jobs:
       - name: Prepare release
         uses: shepz/telepresence-internal-actions/execute-release-commands@main
         with:
-          gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
+          gh_auto_release_token: ${{ secrets.SHEPZ_AUTOMATON_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
           telepresence_version: ${{ needs.check-commit.outputs.telepresence_version }}
