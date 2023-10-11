@@ -115,7 +115,7 @@ jobs:
           telepresence_version: ${{ env.TELEPRESENCE_VERSION }}
           repository: "shepz/telepresence-pro"
           pre_push_branch_commands: "make prepare-release && make generate"
-          pre_post_branch_commands: "make push-tags"
+          post_push_branch_commands: "make push-tags"
 
   slack-notification:
     needs: trigger-pro-release
