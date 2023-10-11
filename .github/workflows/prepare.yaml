@@ -28,22 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-commit
     steps:
-#      - uses: actions/checkout@v3
-#        with:
-#          token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
-#          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
-#
-#      - uses: actions/setup-go@v3
-#        with:
-#          go-version: '~1.21.0'
-
-      - name: Get release type
-        id: get_release_type
-        run: |
-          echo "is_ga=false" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          echo "is_ga=true" >> $GITHUB_ENV
-          fi
       - name: Prepare release
         uses: shepz/telepresence-internal-actions/execute-release-commands@main
         with:
@@ -52,8 +36,8 @@ jobs:
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
           telepresence_version: ${{ needs.check-commit.outputs.telepresence_version }}
           repository: "shepz/telepresence"
-          commands: "make prepare-release"
-          post_commands: "make push-tags"
+          pre_push_branch_commands: "make prepare-release"
+          post_push_branch_commands: "make push-tags"
 
   slack-notification:
     needs: prepare-release
