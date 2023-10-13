@@ -46,21 +46,13 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-release
-    env:
-      TELEPRESENCE_VERSION: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '~1.21.0'
       - name: Download artifacts
         uses: actions/download-artifact@v3
       - name: Determine if version is RC or GA
         id: semver_check
         run: |
-          if [[ "${{ env.TELEPRESENCE_VERSION }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$ ]]; then
           echo "MAKE_LATEST=false" >> $GITHUB_ENV
           echo "PRERELEASE=true" >> $GITHUB_ENV
           else
@@ -74,17 +66,17 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ env.PRERELEASE }}
           makeLatest: ${{ env.MAKE_LATEST }}
-          tag: ${{ env.TELEPRESENCE_VERSION }}
+          tag: ${{ github.ref_name }}
           body: |
             ## Official Release Artifacts
             ### Linux
-               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-linux-amd64)
-               - 📦 [telepresence-linux-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-linux-arm64)
+               - 📦 [telepresence-linux-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-amd64)
+               - 📦 [telepresence-linux-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-linux-arm64)
             ### OSX Darwin
-               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-darwin-amd64)
-               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-darwin-arm64)
+               - 📦 [telepresence-darwin-amd64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-amd64)
+               - 📦 [telepresence-darwin-arm64](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-darwin-arm64)
             ### Windows
-               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ env.TELEPRESENCE_VERSION }}/telepresence-windows-amd64.zip)
+               - 📦 [telepresence-windows-amd64.zip](https://app.getambassador.io/download/tel2oss/releases/download/${{ github.ref_name }}/telepresence-windows-amd64.zip)
 
             For more builds across platforms and architectures, see the `Assets` section below.
             And for more information, visit our [installation docs](https://www.telepresence.io/docs/latest/quick-start/).
@@ -95,15 +87,13 @@ jobs:
         uses: shepz/telepresence-internal-actions/slack-notification-release-success@main
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          telepresence_version: ${{ env.TELEPRESENCE_VERSION }}
+          telepresence_version: ${{ github.ref_name }}
           telepresence_product: "OSS"
 
   trigger-pro-release:
     runs-on: ubuntu-latest
     needs:
       - release
-    env:
-      TELEPRESENCE_VERSION: ${{ github.ref_name }}
     steps:
       - name: Trigger other releases
         id: trigger
@@ -112,7 +102,7 @@ jobs:
           gh_auto_release_token: ${{ secrets.GH_AUTO_RELEASE_TOKEN }}
           gh_auto_release_email: ${{ secrets.GH_AUTO_RELEASE_EMAIL }}
           gh_auto_release_user: ${{ secrets.GH_AUTO_RELEASE_USER }}
-          telepresence_version: ${{ env.TELEPRESENCE_VERSION }}
+          telepresence_version: ${{ github.ref_name }}
           repository: "shepz/telepresence-pro"
           pre_push_branch_commands: "make prepare-release && make generate"
           post_push_branch_commands: "make push-tags"
