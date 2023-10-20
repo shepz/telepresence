@@ -175,7 +175,7 @@ endif
 
 ifeq ($(GOOS),windows)
 $(TELEPRESENCE_INSTALLER): $(TELEPRESENCE)
-	./packaging/windows-package.sh
+	bash ./packaging/windows-package.sh
 endif
 
 # Make local authenticator. This is for test only as it's really only intended to run from within a container
